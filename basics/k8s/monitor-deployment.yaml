@@ -1,0 +1,19 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: monitor-deployment
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: monitor
+  template:
+    metadata:
+      labels:
+        app: monitor
+    spec:
+      containers:
+        - name: monitor-container
+          image: prodanish203/prometheus-node
+          ports:
+            - containerPort: 8000
