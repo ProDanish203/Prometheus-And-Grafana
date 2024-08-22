@@ -1,0 +1,16 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: monitor-node-service
+  labels:
+    app: monitor-node-service
+    job: monitor-node-service
+spec:
+  selector:
+    app: monitor-node
+  type: LoadBalancer
+  ports:
+    - name: monitor-node-port
+      protocol: TCP
+      port: 8000
+      targetPort: 8000

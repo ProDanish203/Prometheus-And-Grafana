@@ -17,8 +17,8 @@ Primary Functions:
 
 Tools:
 
-- Monitoring: Prometheus, Grafana
-- Logging: Loki, Elasticsearch
+- Monitoring: Prometheus, Grafana, Nagios, Zabbix, PRTG.
+- Logging: Grafana Loki, ELK Stack (Elasticsearch, Logstash, Kibana), EFK Stack (Elasticsearch, FluentBit, Kibana) Splunk, Jaeger, Zipkin, New Relic, Dynatrace, Datadog.
 
 ## Prometheus
 
@@ -52,12 +52,11 @@ helm install prometheus prometheus-community/kube-prometheus-stack
 
 # Open dashboard through port-forwarding
 kubectl port-forward prometheus-prometheus-kube-prometheus-prometheus-0 9090
+
+# Open dashboard
+kubectl expose service prometheus-server --type=NodePort --target-port=9090 --name=prometheus-server-ext
+
 ```
-
-### Service Monitors
-
-- Service Monitors define a set of targets for Prometheus to monitor and scrape.
-- They allow you to avoid directly modifying Prometheus configurations and provide a declarative Kubernetes syntax to define targets.
 
 ## Grafana
 
@@ -71,6 +70,23 @@ kubectl port-forward prometheus-prometheus-kube-prometheus-prometheus-0 9090
     5. Plugin ecosystem: Extend Grafana's functionality with a wide range of plugins.
 - Grafana is often used in conjunction with Prometheus for visualizing metrics.
 
+### Installation:
+
+```yaml
+helm repo add grafana https://grafana.github.io/helm-charts
+helm repo update
+helm install grafana grafana/grafana
+
+# Open Grafana
+kubectl expose service grafana --type=NodePort --target-port=3000 --name=grafana-ext
+
+# Get password for user: admin
+kubectl get secret --namespace default grafana -o jsonpath="{.data.admin-password}" | base64 --decode ; echo
+```
+
+- Add Data source in your dashboard by choosing Prometheus and adding the url for Prometheus running on your cluster, then click “Save & Test”
+- Add a new dashboard from open source by importing it using its id: some are: `3662`, `8171`, `11159`
+
 ## Grafana Loki
 
 - Loki is a horizontally-scalable, highly-available, multi-tenant log aggregation system inspired by Prometheus.
@@ -80,6 +96,83 @@ kubectl port-forward prometheus-prometheus-kube-prometheus-prometheus-0 9090
     3. LogQL: Loki uses LogQL, a query language inspired by PromQL, allowing for powerful log querying capabilities.
     4. Multi-tenancy: Loki supports multi-tenancy out of the box, making it suitable for use by multiple teams or in service provider scenarios.
     5. Integration with Grafana: Loki integrates seamlessly with Grafana for log visualization and exploration.
+
+### Service Monitors
+
+- Service Monitors define a set of targets for Prometheus to monitor and scrape.
+- They allow you to avoid directly modifying Prometheus configurations and provide a declarative Kubernetes syntax to define targets.
+
+## Server Configuration For Prometheus Client
+
+- Install Prometheus Client: `npm i prom-client@11.5.3`
+- Configure Prometheus client and create route for metrics
+
+```jsx
+const register = new promClient.Registry();
+register.setDefaultLabels({
+  app: "monitor-node-service",
+});
+
+const collectDefaultMetrics = promClient.collectDefaultMetrics;
+
+collectDefaultMetrics({ register });
+
+app.get("/metrics", async (req, res) => {
+  res.setHeader("Content-Type", register.contentType);
+  const metrics = await register.metrics();
+  res.end(metrics);
+});
+```
+
+- Create custom metrics
+
+```yaml
+const httpReqCounter = new promClient.Counter({
+  name: "http_requests_total",
+  help: "Total number of HTTP requests",
+  labelNames: ["method", "route", "status_code"],
+  registers: [register],
+});
+
+const requestDurationHistogram = new promClient.Histogram({
+  name: "http_request_duration_seconds",
+  help: "Duration of HTTP requests in seconds",
+  labelNames: ["method", "route", "status_code"],
+  buckets: [0.1, 0.5, 1, 5, 10], // Buckets for the histogram in seconds
+  registers: [register],
+});
+
+const requestDurationSummary = new promClient.Summary({
+  name: "http_request_duration_summary_seconds",
+  help: "Summary of the duration of HTTP requests in seconds",
+  labelNames: ["method", "route", "status_code"],
+  percentiles: [0.5, 0.9, 0.99], // Define your percentiles here
+  registers: [register],
+});
+
+const gauge = new promClient.Gauge({
+  name: "node_gauge_example",
+  help: "Example of a gauge tracking async task duration",
+  labelNames: ["method", "status"],
+  registers: [register],
+});
+```
+
+- Create a middleware to track metrics
+
+```jsx
+app.use(
+  responseTime((req, res, time) => {
+    httpReqCounter.labels(req.method, req.url, res.statusCode).inc();
+    requestDurationHistogram
+      .labels(req.method, req.url, res.statusCode)
+      .observe(time);
+    requestDurationSummary
+      .labels(req.method, req.url, res.statusCode)
+      .observe(time);
+  })
+);
+```
 
 ## Getting Started: Express Server
 
@@ -151,3 +244,4 @@ http://localhost:3100/metrics
 ## Important Resources
 
 - https://gist.github.com/piyushgarg-dev/7c4016b12301552b628bbac21a11e6ab
+- [https://github.com/iam-veeramalla/observability-zero-to-hero](https://github.com/iam-veeramalla/observability-zero-to-hero/tree/main)

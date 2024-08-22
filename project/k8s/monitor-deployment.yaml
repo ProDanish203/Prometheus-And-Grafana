@@ -1,0 +1,22 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: monitor-node-deployment
+  labels:
+    app: monitor-node-deployment
+    job: monitor-node-deployment
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: monitor-node
+  template:
+    metadata:
+      labels:
+        app: monitor-node
+    spec:
+      containers:
+        - name: monitor-node-container
+          image: prodanish203/monitor-node-app
+          ports:
+            - containerPort: 9000

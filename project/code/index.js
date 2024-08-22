@@ -20,67 +20,56 @@ const logging = () => {
 
 const register = new promClient.Registry();
 register.setDefaultLabels({
-  app: "example-nodejs-app",
+  app: "monitor-node-service",
 });
 
 const collectDefaultMetrics = promClient.collectDefaultMetrics;
 
 collectDefaultMetrics({ register });
 
-app.get("/metrics", async (req, res) => {
-  res.setHeader("Content-Type", register.contentType);
-  const metrics = await register.metrics();
-  res.end(metrics);
-});
-
 // Custom Metrics
 const httpReqCounter = new promClient.Counter({
   name: "http_requests_total",
   help: "Total number of HTTP requests",
   labelNames: ["method", "route", "status_code"],
+  registers: [register],
 });
 
 const requestDurationHistogram = new promClient.Histogram({
   name: "http_request_duration_seconds",
   help: "Duration of HTTP requests in seconds",
-  labelNames: ["method", "path", "status_code"],
+  labelNames: ["method", "route", "status_code"],
   buckets: [0.1, 0.5, 1, 5, 10], // Buckets for the histogram in seconds
+  registers: [register],
 });
 
 const requestDurationSummary = new promClient.Summary({
   name: "http_request_duration_summary_seconds",
   help: "Summary of the duration of HTTP requests in seconds",
-  labelNames: ["method", "path", "status_code"],
+  labelNames: ["method", "route", "status_code"],
   percentiles: [0.5, 0.9, 0.99], // Define your percentiles here
+  registers: [register],
 });
 
 const gauge = new promClient.Gauge({
   name: "node_gauge_example",
   help: "Example of a gauge tracking async task duration",
   labelNames: ["method", "status"],
+  registers: [register],
 });
 
-// app.use(
-//   responseTime((req, res, time) => {
-//     reqResDuration.labels(req.method, req.url, res.statusCode).observe(time);
-//   })
-// );
-
 // Middleware to track metrics
-app.use((req, res, next) => {
-  const start = Date.now();
-  res.on("finish", () => {
-    const duration = (Date.now() - start) / 1000; // Duration in seconds
+app.use(
+  responseTime((req, res, time) => {
     httpReqCounter.labels(req.method, req.url, res.statusCode).inc();
     requestDurationHistogram
       .labels(req.method, req.url, res.statusCode)
-      .observe(duration);
+      .observe(time);
     requestDurationSummary
       .labels(req.method, req.url, res.statusCode)
-      .observe(duration);
-  });
-  next();
-});
+      .observe(time);
+  })
+);
 
 // Routes
 app.get("/", (req, res) => {
@@ -122,6 +111,12 @@ app.get("/logs", (req, res) => {
 
 app.get("/crash", (req, res) => {
   process.exit(1);
+});
+
+app.get("/metrics", async (req, res) => {
+  res.setHeader("Content-Type", register.contentType);
+  const metrics = await register.metrics();
+  res.end(metrics);
 });
 
 const simulateAsyncTask = async () => {
