@@ -58,6 +58,9 @@ kubectl expose service prometheus-server --type=NodePort --target-port=9090 --na
 
 ```
 
+![prometheus](https://github.com/user-attachments/assets/61b261d5-73a5-4b4a-875d-31bdc6776c35)
+
+
 ## Grafana
 
 - Grafana is an open-source platform for monitoring and observability.
@@ -86,6 +89,9 @@ kubectl get secret --namespace default grafana -o jsonpath="{.data.admin-passwor
 
 - Add Data source in your dashboard by choosing Prometheus and adding the url for Prometheus running on your cluster, then click “Save & Test”
 - Add a new dashboard from open source by importing it using its id: some are: `3662`, `8171`, `11159`
+
+![grafana 2](https://github.com/user-attachments/assets/de7366d7-9e5d-46f0-a01d-dcfa7d51e925)
+
 
 ## Grafana Loki
 
@@ -173,6 +179,9 @@ app.use(
   })
 );
 ```
+
+![grafana](https://github.com/user-attachments/assets/6601cdbc-6a6b-4252-acde-ce891c02612a)
+
 
 ## Getting Started: Express Server
 
