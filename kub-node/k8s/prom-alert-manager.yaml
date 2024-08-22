@@ -1,0 +1,19 @@
+apiVersion: monitoring.coreos.com/v1alpha1
+kind: AlertmanagerConfig
+metadata:
+  name: prom-alert-manager
+  labels:
+    app: prom-alert-manager
+    job: prom-alert-manager
+    resource: prometheus
+spec:
+  receivers:
+    - name: default-receiver
+      webhookConfigs:
+        - url: http://ab.com/
+  route:
+    groupBy: ["alertname", "cluster", "service"]
+    groupWait: 30s
+    groupInterval: 5m
+    repeatInterval: 3h
+    receiver: default-receiver

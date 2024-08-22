@@ -1,19 +1,19 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: monitor-deployment
+  name: prom-node-deployment
 spec:
   replicas: 3
   selector:
     matchLabels:
-      app: monitor
+      app: prom-node
   template:
     metadata:
       labels:
-        app: monitor
+        app: prom-node
     spec:
       containers:
-        - name: monitor-container
-          image: prodanish203/prometheus-node
+        - name: prom-node-container
+          image: prodanish203/kube-node-prom
           ports:
             - containerPort: 8000

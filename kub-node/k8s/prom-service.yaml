@@ -1,0 +1,16 @@
+apiVersion: v1
+kind: Service
+metadata: 
+  name: prom-node-service
+  labels: 
+    app: prom-node-service
+    job: prom-node-service
+spec: 
+  selector:
+    app: prom-node
+  type: LoadBalancer
+  ports:
+    - name: prom-node-port
+      protocol: TCP
+      port: 8000
+      targetPort: 8000

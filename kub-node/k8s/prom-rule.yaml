@@ -1,0 +1,35 @@
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: prom-node-rule
+  labels:
+    app: prom-node-rule
+    job: prom-node-rule
+spec:
+  groups:
+    - name: prom-node-rule
+      rules:
+        - alert: down
+          expr: up == 0
+          for: 1m
+          labels:
+            severity: critical
+          annotations:
+            summary: Instance {{ $labels.instance }} down
+            description: Instance {{ $labels.instance }} of job {{ $labels.job }} has been down for more than 1 minute.
+        - alert: HighRequestRate
+          expr: sum(rate(http_requests_total{job="prom-node-service"}[5m])) > 100
+          for: 1m
+          labels:
+            severity: critical
+          annotations:
+            summary: High request rate
+            description: High request rate detected on prom-node-service
+        - alert: HighErrorRate
+          expr: sum(rate(http_requests_total{job="prom-node-service", status="500"}[5m])) > 10
+          for: 1m
+          labels:
+            severity: warning
+          annotations:
+            summary: High error rate
+            description: High error rate detected on prom-node-service
