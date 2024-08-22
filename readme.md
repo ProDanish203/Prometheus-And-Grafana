@@ -20,6 +20,9 @@ Tools:
 - Monitoring: Prometheus, Grafana, Nagios, Zabbix, PRTG.
 - Logging: Grafana Loki, ELK Stack (Elasticsearch, Logstash, Kibana), EFK Stack (Elasticsearch, FluentBit, Kibana) Splunk, Jaeger, Zipkin, New Relic, Dynatrace, Datadog.
 
+![monitoring-architecture](https://github.com/user-attachments/assets/6e3a3cdc-07c6-4986-b7e4-438dbfe37165)
+
+
 ## Prometheus
 
 - Prometheus is used for monitoring and gaining metrics.
